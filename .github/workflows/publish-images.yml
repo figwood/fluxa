@@ -82,6 +82,6 @@ jobs:
             --connect-timeout 10 \
             --max-time 60 \
             -H "X-Deploy-Token: ${DEPLOY_TOKEN}" \
-            -H "X-Service-Name: version-source" \
+            -H "X-Service-Name: fluxa" \
             -X POST \
             ${DEPLOY_URL}/hooks/redeploy-service

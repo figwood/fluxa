@@ -1,0 +1,13 @@
+node_modules/
+.next/
+dist/
+*.tsbuildinfo
+data/
+*.db
+*.db-shm
+*.db-wal
+.env
+.env.local
+!.env.sample
+
+HANDOFF.md

@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+!.env.sample
+node_modules
+**/node_modules
+apps/web/.next
+data
+*.db
+*.db-shm
+*.db-wal
+*.log

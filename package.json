@@ -1,0 +1,17 @@
+{
+  "name": "fluxa",
+  "private": true,
+  "scripts": {
+    "dev": "bash scripts/dev-all.sh",
+    "dev:all": "bash scripts/dev-all.sh",
+    "dev:web": "pnpm --dir apps/web dev",
+    "build:web": "pnpm --dir apps/web build",
+	"typecheck:web": "pnpm --dir apps/web exec tsc --noEmit",
+	"check": "bash scripts/go.sh test ./apps/api/... && bash scripts/go.sh vet ./apps/api/... && pnpm typecheck:web && pnpm build:web",
+    "start:web": "pnpm --dir apps/web start",
+    "dev:api": "bash scripts/go.sh run ./apps/api/cmd/api",
+    "dev:worker": "bash scripts/go.sh run ./apps/api/cmd/worker",
+    "reset-admin": "bash scripts/go.sh run ./apps/api/cmd/reset-admin",
+    "test:api": "bash scripts/go.sh test ./apps/api/..."
+  }
+}

@@ -657,7 +657,7 @@ func ensureBootstrapAdmin(ctx context.Context, tx *gorm.DB, adminRoleID int64, p
 			}
 			password = "development-only-password"
 		}
-		if len(password) < 12 {
+		if len(password) < 8 {
 			return errors.New("BOOTSTRAP_ADMIN_PASSWORD must contain at least 12 characters")
 		}
 		hash, err := security.HashPassword(password)

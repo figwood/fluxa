@@ -15,6 +15,11 @@ type passwordRequest struct {
 	Password string `json:"password"`
 }
 
+type changePasswordRequest struct {
+	CurrentPassword string `json:"current_password"`
+	NewPassword     string `json:"new_password"`
+}
+
 type rolePrivilegesRequest struct {
 	PrivilegeIDs []int64 `json:"privilege_ids"`
 }
@@ -32,7 +37,39 @@ func RegisterAuthPublicRoutes(r gin.IRouter, svc *iamapp.Service) {
 
 func RegisterAuthRoutes(r gin.IRouter, svc *iamapp.Service) {
 	r.GET("/auth/me", me(svc))
+	r.GET("/auth/profile", profile(svc))
+	r.PUT("/auth/password", changeOwnPassword(svc))
 	r.POST("/auth/logout", func(c *gin.Context) { OK(c, nil) })
+}
+
+func profile(svc *iamapp.Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		idValue, _ := c.Get("user_id")
+		id, _ := idValue.(int64)
+		user, err := svc.GetUser(c.Request.Context(), id)
+		if err != nil {
+			Error(c, err)
+			return
+		}
+		OK(c, user)
+	}
+}
+
+func changeOwnPassword(svc *iamapp.Service) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var in changePasswordRequest
+		if err := c.ShouldBindJSON(&in); err != nil {
+			Error(c, shared.ErrInvalidInput)
+			return
+		}
+		idValue, _ := c.Get("user_id")
+		id, _ := idValue.(int64)
+		if err := svc.ChangePassword(c.Request.Context(), id, in.CurrentPassword, in.NewPassword); err != nil {
+			Error(c, err)
+			return
+		}
+		OK(c, nil)
+	}
 }
 
 func login(svc *iamapp.Service) gin.HandlerFunc {

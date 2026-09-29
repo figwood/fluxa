@@ -86,7 +86,7 @@ export default function UsersPage() {
 
   const resetPassword = async (id: number) => {
     setError("");
-    const password = window.prompt("输入不少于 12 位的新密码");
+    const password = window.prompt("输入不少于 8 位的新密码");
     if (!password) return;
     try {
       await putJSON<void>(`/user/${id}/password`, { password });
@@ -129,7 +129,7 @@ export default function UsersPage() {
             <Field label="类型">
               <Input type="number" value={form.user_type} onChange={(e) => setForm({ ...form, user_type: e.target.value })} />
             </Field>
-            {!editingID ? <Field label="初始密码"><Input type="password" minLength={12} value={form.initial_password} onChange={(e) => setForm({ ...form, initial_password: e.target.value })} required /></Field> : null}
+            {!editingID ? <Field label="初始密码"><Input type="password" minLength={8} value={form.initial_password} onChange={(e) => setForm({ ...form, initial_password: e.target.value })} required /></Field> : null}
             <div className="flex items-end gap-2">
               <Button type="submit">
                 <Plus className="h-4 w-4" />

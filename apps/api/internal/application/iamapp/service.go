@@ -10,7 +10,7 @@ import (
 	"fluxa-api/internal/shared"
 )
 
-const minimumPasswordLength = 12
+const minimumPasswordLength = 8
 
 type Service struct {
 	repo      iam.Repository
@@ -124,6 +124,27 @@ func (s *Service) ResetUserPassword(ctx context.Context, id int64, password stri
 		return err
 	}
 	return s.repo.ResetUserPassword(ctx, id, hash)
+}
+
+func (s *Service) ChangePassword(ctx context.Context, id int64, currentPassword, newPassword string) error {
+	currentPassword = strings.TrimSpace(currentPassword)
+	newPassword = strings.TrimSpace(newPassword)
+	if id <= 0 || currentPassword == "" || len(newPassword) < minimumPasswordLength {
+		return shared.ErrInvalidInput
+	}
+	user, err := s.repo.GetUser(ctx, id)
+	if err != nil {
+		return shared.ErrUnauthorized
+	}
+	matchedUser, hash, err := s.repo.FindUserForLogin(ctx, user.UserName)
+	if err != nil || matchedUser.ID != id || !security.VerifyPassword(hash, currentPassword) {
+		return shared.ErrUnauthorized
+	}
+	newHash, err := security.HashPassword(newPassword)
+	if err != nil {
+		return err
+	}
+	return s.repo.ResetUserPassword(ctx, id, newHash)
 }
 
 func (s *Service) CurrentPrincipal(ctx context.Context, claims security.Claims) (security.Principal, error) {

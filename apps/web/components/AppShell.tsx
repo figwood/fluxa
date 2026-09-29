@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { CheckSquare, ChevronDown, Cpu, GitBranch, KeyRound, LogOut, Menu, Rocket, Settings, ShieldCheck, Users, X } from "lucide-react";
+import { CheckSquare, ChevronDown, Cpu, GitBranch, KeyRound, LogOut, Menu, Rocket, Settings, ShieldCheck, UserRound, Users, X } from "lucide-react";
 import { ProjectScopeProvider, projectScopeStorageKey } from "@/components/ProjectScope";
 import { apiFetch, clearToken } from "@/lib/api";
 import type { Project, UserAccess } from "@/lib/types";
@@ -29,6 +29,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProjectId, setSelectedProjectIdState] = useState("");
   const [mobileOpen, setMobileOpen] = useState(false);
+  const topMenuRef = useRef<HTMLDivElement>(null);
   const pathProjectId = useMemo(() => pathname.match(/^\/projects\/([^/]+)/)?.[1] || "", [pathname]);
   const selectedProject = projects.find((item) => item.id === selectedProjectId);
 
@@ -52,7 +53,29 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     }).catch(() => setProjects([]));
   }, [isLogin, pathProjectId]);
 
-  useEffect(() => setMobileOpen(false), [pathname]);
+  useEffect(() => {
+    setMobileOpen(false);
+    topMenuRef.current?.querySelectorAll<HTMLDetailsElement>("details[open]").forEach((menu) => { menu.open = false; });
+  }, [pathname]);
+
+  useEffect(() => {
+    const closeMenus = (event: PointerEvent) => {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      topMenuRef.current?.querySelectorAll<HTMLDetailsElement>("details[open]").forEach((menu) => {
+        if (!menu.contains(target)) menu.open = false;
+      });
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") topMenuRef.current?.querySelectorAll<HTMLDetailsElement>("details[open]").forEach((menu) => { menu.open = false; });
+    };
+    document.addEventListener("pointerdown", closeMenus);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeMenus);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
 
   const setSelectedProjectId = (nextProjectId: string) => {
     setSelectedProjectIdState(nextProjectId);
@@ -79,19 +102,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <div className="ml-auto flex min-w-0 items-center gap-2">
             <span className="shrink-0 text-sm text-muted-foreground">当前项目</span>
             <Select className="w-36 sm:w-52" aria-label="切换项目" value={selectedProjectId} onChange={(event) => setSelectedProjectId(event.target.value)} options={projects.map((item) => ({ label: item.name, value: item.id }))} disabled={projects.length === 0} />
+            <div ref={topMenuRef} className="flex items-center gap-1">
             <details className="group relative hidden md:block">
               <summary className="flex h-9 cursor-pointer list-none items-center gap-1 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted"><Settings className="h-4 w-4" />设置<ChevronDown className="h-3.5 w-3.5" /></summary>
               <div className="absolute right-0 mt-2 grid w-52 gap-1 rounded-lg border bg-card p-2 shadow-lg">
                 <div className="px-2 py-1 text-xs text-muted-foreground">{selectedProject?.name || "当前项目"}</div>
                 {selectedProjectId ? <><Link className="rounded-md px-2 py-2 text-sm hover:bg-muted" href={`/projects/${selectedProjectId}`}>项目概览与设置</Link><Link className="rounded-md px-2 py-2 text-sm hover:bg-muted" href={`/projects/${selectedProjectId}/gitlab`}>GitLab 与发布服务</Link><Link className="rounded-md px-2 py-2 text-sm hover:bg-muted" href={`/projects/${selectedProjectId}/members`}>项目成员</Link></> : null}
                 {isAdmin ? <Link className="rounded-md border-t px-2 py-2 text-sm hover:bg-muted" href="/admin">平台管理</Link> : null}
+              </div>
+            </details>
+            <details className="group relative hidden md:block">
+              <summary className="flex h-9 cursor-pointer list-none items-center gap-1 rounded-md px-3 text-sm font-medium text-muted-foreground hover:bg-muted"><UserRound className="h-4 w-4" />帐户<ChevronDown className="h-3.5 w-3.5" /></summary>
+              <div className="absolute right-0 mt-2 grid w-44 gap-1 rounded-lg border bg-card p-2 shadow-lg">
+                <Link className="flex items-center gap-2 rounded-md px-2 py-2 text-sm hover:bg-muted" href="/profile"><UserRound className="h-4 w-4" />个人资料</Link>
                 <button className="flex items-center gap-2 rounded-md px-2 py-2 text-left text-sm text-muted-foreground hover:bg-muted" onClick={async () => { await clearToken(); router.push("/login"); router.refresh(); }}><LogOut className="h-4 w-4" />退出登录</button>
               </div>
             </details>
+            </div>
             <Button variant="ghost" size="sm" className="md:hidden" onClick={() => setMobileOpen((value) => !value)} aria-label="打开导航">{mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</Button>
           </div>
         </div>
-        {mobileOpen ? <div className="grid gap-1 border-t p-3 md:hidden">{mainLink("/tasks", "开发任务", CheckSquare)}{mainLink("/releases", "发布管理", Rocket)}{selectedProjectId ? <Link className="rounded-lg px-4 py-2 text-sm text-muted-foreground" href={`/projects/${selectedProjectId}`}>当前项目 · 项目设置</Link> : null}{isAdmin ? <Link className="rounded-lg px-4 py-2 text-sm text-muted-foreground" href="/admin">平台管理</Link> : null}<button className="rounded-lg px-4 py-2 text-left text-sm text-muted-foreground" onClick={async () => { await clearToken(); router.push("/login"); }}>退出登录</button></div> : null}
+        {mobileOpen ? <div className="grid gap-1 border-t p-3 md:hidden">{mainLink("/tasks", "开发任务", CheckSquare)}{mainLink("/releases", "发布管理", Rocket)}<div className="mt-2 border-t pt-3"><div className="px-4 pb-1 text-xs font-medium text-muted-foreground">帐户</div><Link className="block rounded-lg px-4 py-2 text-sm text-muted-foreground" href="/profile">个人资料</Link><button className="w-full rounded-lg px-4 py-2 text-left text-sm text-muted-foreground" onClick={async () => { await clearToken(); router.push("/login"); }}>退出登录</button></div><div className="mt-2 border-t pt-3"><div className="px-4 pb-1 text-xs font-medium text-muted-foreground">项目设置</div>{selectedProjectId ? <Link className="block rounded-lg px-4 py-2 text-sm text-muted-foreground" href={`/projects/${selectedProjectId}`}>当前项目 · 项目设置</Link> : null}{isAdmin ? <Link className="block rounded-lg px-4 py-2 text-sm text-muted-foreground" href="/admin">平台管理</Link> : null}</div></div> : null}
       </header> : null}
       <div className={cn(pathname.startsWith("/admin") && "md:grid md:grid-cols-[220px_1fr]")}>
         {pathname.startsWith("/admin") && isAdmin === true ? <aside className="hidden min-h-[calc(100vh-64px)] border-r bg-card p-4 md:block"><div className="mb-3 px-3 text-xs font-semibold uppercase text-muted-foreground">平台管理</div><nav className="grid gap-1">{adminItems.map(adminLink)}</nav></aside> : null}
